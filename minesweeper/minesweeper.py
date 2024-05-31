@@ -105,6 +105,8 @@ class Sentence:
         """
         if len(self.cells) == self.count:
             return self.cells
+        else:
+            return set()
 
     def known_safes(self):
         """
@@ -112,6 +114,8 @@ class Sentence:
         """
         if self.count == 0:
             return self.cells
+        else:
+            return set()
 
     def mark_mine(self, cell):
         """
@@ -229,13 +233,11 @@ class MinesweeperAI:
             known_mines = (
                 sentence.known_mines()
             )  # set of cells known to be mines based on sentence
-            if known_mines:
-                for cell in known_mines:
-                    self.mark_mine(cell)
+            for cell in known_mines.copy():
+                self.mark_mine(cell)
             known_safes = sentence.known_safes()
-            if known_safes:
-                for cell in known_safes:
-                    self.mark_safe(cell)
+            for cell in known_safes.copy():
+                self.mark_safe(cell)
 
         # 5) add any new sentences to the AI's knowledge base
         # if they can be inferred from existing knowledge
