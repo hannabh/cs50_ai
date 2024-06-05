@@ -195,6 +195,55 @@ class MinesweeperAI:
                     nearby_cells.append((i, j))
         return nearby_cells
 
+    def mark_cells(self):
+        """
+        Mark any additional cells as safe or as mines
+        if it can be concluded based on the AI's knowledge base
+
+        Returns True if the knowledge base has changed, False if not
+        """
+        orig_mines = len(self.mines)
+        orig_safes = len(self.safes)
+        
+        for sentence in self.knowledge:
+            known_mines = (
+                sentence.known_mines()
+            )  # set of cells known to be mines based on sentence
+            for cell in known_mines.copy():
+                self.mark_mine(cell)
+            known_safes = sentence.known_safes()  # set of cells known to be safe based on sentence
+            for cell in known_safes.copy():
+                self.mark_safe(cell)
+        
+        # if knowledge base has not changed, return False
+        if len(self.mines) == orig_mines and len(self.safes) == orig_safes:
+            return False
+        # if knowledge base has changed, return True
+        else:
+            return True
+
+    def infer_knowledge(self):
+        """
+        Add new sentences to the AI's knowledge base if they can be inferred from existing knowledge using the subset rule:
+        if we have 2 sentences set1 = count1 and set2 = count2, where set1 is a subset of set2,
+        we can construct a new sentence set2 - set1 = count2 - count1
+        
+        Returns True if the knowledge base has changed, False if not
+        """
+        knowledge_changed = False
+        sentence_pairs = itertools.combinations(self.knowledge, 2)
+        for sentence1, sentence2 in sentence_pairs:
+            set1 = sentence1.cells
+            set2 = sentence2.cells
+            count1 = sentence1.count
+            count2 = sentence2.count
+            if set1.issubset(set2):
+                new_sentence = Sentence(set2 - set1, count2 - count1)
+                if new_sentence not in self.knowledge:
+                    self.knowledge.append(new_sentence)
+                    knowledge_changed = True
+        return knowledge_changed
+
     def add_knowledge(self, cell, count):
         """
         Called when the Minesweeper board tells us, for a given
@@ -218,42 +267,26 @@ class MinesweeperAI:
 
         # 3) add a new sentence to the AI's knowledge base
         # based on the value of `cell` and `count`
-
-        # self.cell = a safe move
-        # self.count = number of neighbouring cells that have mines in them
-        # indicate that count of the cell's neighbours are mines
+        # cell is known to be a safe cell with count mines neighboring it
         nearby_cells = self.nearby_cells(cell)
+        for cell in nearby_cells.copy():
+            # only include cells not already known to be safe or mine
+            if cell in self.safes:
+                nearby_cells.remove(cell)
+            elif cell in self.mines:
+                nearby_cells.remove(cell)
+                count = count - 1
         sentence = Sentence(nearby_cells, count)
-        # TODO: only include cells whose state is still undetermined in the sentence
         self.knowledge.append(sentence)
 
-        # 4) mark any additional cells as safe or as mines
-        # if it can be concluded based on the AI's knowledge base
-        for sentence in self.knowledge:
-            known_mines = (
-                sentence.known_mines()
-            )  # set of cells known to be mines based on sentence
-            for cell in known_mines.copy():
-                self.mark_mine(cell)
-            known_safes = sentence.known_safes()
-            for cell in known_safes.copy():
-                self.mark_safe(cell)
-
-        # 5) add any new sentences to the AI's knowledge base
-        # if they can be inferred from existing knowledge
-        sentence_pairs = itertools.combinations(self.knowledge, 2)
-        for sentence1, sentence2 in sentence_pairs:
-            # if we have 2 sentences set1 = count1 and set2 = count2, where set1 is a subset of set2,
-            # we can construct a new sentence set2 - set1 = count2 - count1
-            set1 = sentence1.cells
-            set2 = sentence2.cells
-            count1 = sentence1.count
-            count2 = sentence2.count
-            if set1.issubset(set2):
-                new_sentence = Sentence(set2 - set1, count2 - count1)
-                self.knowledge.append(new_sentence)
-
-        # TODO: any time a change is made to self.knowledge, it may be possible to draw new inferences - add these!
+        # Continually update knowledge until no new knowledge can be inferred
+        knowledge_changed = True
+        while knowledge_changed:
+            knowledge_changed = False
+            if self.mark_cells():
+                knowledge_changed = True
+            if self.infer_knowledge():
+                knowledge_changed = True
 
     def available_moves(self):
         """
