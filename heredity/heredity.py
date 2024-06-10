@@ -128,6 +128,17 @@ def powerset(s):
     ]
 
 
+def calculate_probability(genes, trait):
+    """
+    genes: 0, 1 or 2
+    trait: True or False
+    """
+    # currently assuming person has no mother or father in dataset
+    gene_prob = PROBS["gene"][genes]
+    trait_prob = PROBS["trait"][genes][trait]
+    return gene_prob * trait_prob
+
+
 def joint_probability(people, one_gene, two_genes, have_trait):
     """
     Compute and return a joint probability.
@@ -139,7 +150,26 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    joint_prob = 1
+
+    for person in people:
+        if person in one_gene:
+            genes = 1
+        elif person in two_genes:
+            genes = 2
+        else:
+            genes = 0
+        
+        if person in have_trait:
+            trait = True
+        else:
+            trait = False
+        
+        # joint probability calculated by multiplying values for individual people
+        person_prob = calculate_probability(genes, trait)
+        joint_prob = joint_prob * person_prob
+    
+    return joint_prob
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
