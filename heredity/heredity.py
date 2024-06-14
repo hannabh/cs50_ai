@@ -128,15 +128,58 @@ def powerset(s):
     ]
 
 
-def calculate_probability(genes, trait):
+def calculate_probability(genes, mother_genes, father_genes, trait):
     """
-    genes: 0, 1 or 2
-    trait: True or False
+    Calculates the probability that a person has the trait (if trait is True),
+    or does not have the trait (if trait is False),
+    given the number of copies of the gene that they and their parents have.
     """
-    # currently assuming person has no mother or father in dataset
-    gene_prob = PROBS["gene"][genes]
+    # if no parents in dataset, use probability distribution PROBS["gene"]
+    if mother_genes == None:
+        # gene_prob: the probability that the person has `genes` copies of the gene
+        gene_prob = PROBS["gene"][genes]
+
+    # if parents in the dataset, each parent will pass one of their two genes on to their child randomly
+    # and there is a PROBS["mutation"] chance that it mutates
+    else:
+        # prob_mother: the probability that the gene gets passed down from the mother
+        if mother_genes == 0:
+            prob_mother = PROBS["mutation"]
+        elif mother_genes == 1:
+            prob_mother = (0.5 * PROBS["mutation"]) + (0.5 * (1 - PROBS["mutation"]))
+        elif mother_genes == 2:
+            prob_mother = 1 - PROBS["mutation"]
+
+        # prob_father: the probability that the gene gets passed down from the father
+        if father_genes == 0:
+            prob_father = PROBS["mutation"]
+        elif father_genes == 1:
+            prob_father = (0.5 * PROBS["mutation"]) + (0.5 * (1 - PROBS["mutation"]))
+        elif father_genes == 2:
+            prob_father = 1 - PROBS["mutation"]
+
+        # gene_prob: the probability that the person has `genes` copies of the gene
+        if genes == 0:
+            gene_prob = (1 - prob_mother) * (1 - prob_father)
+        elif genes == 1:
+            gene_prob = (prob_mother * (1 - prob_father)) + (prob_father * (1 - prob_mother))
+        elif genes == 2:
+            gene_prob = prob_mother * prob_father
+
     trait_prob = PROBS["trait"][genes][trait]
     return gene_prob * trait_prob
+
+
+def get_genes(person, one_gene, two_genes):
+    if person == None:
+        genes = None
+    elif person in one_gene:
+        genes = 1
+    elif person in two_genes:
+        genes = 2
+    else:
+        genes = 0
+    return genes
 
 
 def joint_probability(people, one_gene, two_genes, have_trait):
@@ -153,22 +196,21 @@ def joint_probability(people, one_gene, two_genes, have_trait):
     joint_prob = 1
 
     for person in people:
-        if person in one_gene:
-            genes = 1
-        elif person in two_genes:
-            genes = 2
-        else:
-            genes = 0
+        mother = people[person]["mother"]
+        father = people[person]["father"]
+        genes = get_genes(person, one_gene, two_genes)
+        mother_genes = get_genes(mother, one_gene, two_genes)
+        father_genes = get_genes(father, one_gene, two_genes)
         
         if person in have_trait:
             trait = True
         else:
             trait = False
-        
+
         # joint probability calculated by multiplying values for individual people
-        person_prob = calculate_probability(genes, trait)
+        person_prob = calculate_probability(genes, mother_genes, father_genes, trait)
         joint_prob = joint_prob * person_prob
-    
+
     return joint_prob
 
 
