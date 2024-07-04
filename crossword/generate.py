@@ -146,8 +146,15 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
-
+        if arcs == None:
+            # begin with initial list of all arcs in the problem
+            # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
+            vars = list(self.crossword.variables)
+            arcs = []
+            for i in range(len(vars)):
+                for j in range(i+1, len(vars)):
+                    arcs.append((vars[i], vars[j]))
+        
         while len(arcs) != 0:
             # remove an arc from the queue
             x, y = arcs.pop(0)
@@ -158,9 +165,11 @@ class CrosswordCreator():
                     return False
                 # else add additional arcs to queue to ensure still arc consistent
                 else:
-                    neighbours = self.neighbours(x)
-                    for node in neighbours.remove(y):
-                        arcs.append(x, node)
+                    neighbours = self.crossword.neighbors(x)
+                    neighbours.remove(y)
+                    if neighbours:
+                        for node in neighbours:
+                            arcs.append((x, node))
         
         return True
 
@@ -185,12 +194,13 @@ class CrosswordCreator():
             if var.length != len(assignment[var]):
                 return False
             # check no conflicts between neighbouring variables
-            neighbours = self.neighbours(var)
+            neighbours = self.crossword.neighbors(var)
             for neighbour in neighbours:
                 overlap = self.crossword.overlaps[var, neighbour]
                 if overlap:
-                    if var[overlap[0]] != neighbour[overlap[1]]:
-                        return False
+                    if neighbour in assignment:
+                        if assignment[var][overlap[0]] != assignment[neighbour][overlap[1]]:
+                            return False
         return True
 
     def order_domain_values(self, var, assignment):
@@ -200,7 +210,8 @@ class CrosswordCreator():
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
-        raise NotImplementedError
+        # TODO: update this function to return in correct order
+        return list(self.domains[var])
 
     def select_unassigned_variable(self, assignment):
         """
@@ -210,7 +221,9 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        raise NotImplementedError
+        # TODO: update this function to return correct variable
+        remaining_variables = [var for var in self.crossword.variables if var not in assignment]
+        return remaining_variables[0]
 
     def backtrack(self, assignment):
         """
@@ -221,7 +234,19 @@ class CrosswordCreator():
 
         If no assignment is possible, return None.
         """
-        raise NotImplementedError
+        if self.assignment_complete(assignment):
+            return assignment
+        
+        var = self.select_unassigned_variable(assignment)
+        for value in self.order_domain_values(var, assignment):
+            assignment[var] = value
+            if self.consistent(assignment):
+                result = self.backtrack(assignment)
+                if result is not None:
+                    return result
+                assignment.pop(var)
+
+        return None
 
 
 def main():
