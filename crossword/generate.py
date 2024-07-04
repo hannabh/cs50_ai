@@ -99,7 +99,10 @@ class CrosswordCreator():
         (Remove any values that are inconsistent with a variable's unary
          constraints; in this case, the length of the word.)
         """
-        raise NotImplementedError
+        # loop over variables
+        for var in self.domains.keys():
+            # remove values from domain which don't have the same number of letters as the variable's length
+            self.domains[var] = {x for x in self.domains[var] if len(x) == var.length}
 
     def revise(self, x, y):
         """
@@ -110,7 +113,29 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        raise NotImplementedError
+        revision = False
+
+        overlap = self.crossword.overlaps[x, y] 
+        # overlap is None if no overlap, or (i, j), where x's ith character overlaps y's jth character
+
+        # if no overlap, x is already arc consistent with y
+        if overlap == None:
+            return revision
+        else:
+            # for each value in x's domain,
+            # check if there is a corresponding value for y
+            for x_word in self.domains[x].copy():
+                consistent_val = False
+                for y_word in self.domains[y]:
+                    if x_word[overlap[0]] == y_word[overlap[1]]:
+                        consistent_val = True
+                        break
+                # if no corresponding value for y, remove value from x's domain 
+                if not consistent_val:
+                    self.domains[x].remove(x_word)
+                    revision = True
+
+        return revision
 
     def ac3(self, arcs=None):
         """
@@ -121,21 +146,52 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        raise NotImplementedError
+        # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
+
+        while len(arcs) != 0:
+            # remove an arc from the queue
+            x, y = arcs.pop(0)
+            # enforce arc consistency
+            if self.revise(x, y):
+                # if all values are removed from a domain, constraint satisfaction not possible
+                if len(self.domains[x]) == 0:
+                    return False
+                # else add additional arcs to queue to ensure still arc consistent
+                else:
+                    neighbours = self.neighbours(x)
+                    for node in neighbours.remove(y):
+                        arcs.append(x, node)
+        
+        return True
 
     def assignment_complete(self, assignment):
         """
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        raise NotImplementedError
+        # check all crossword variables are in the assignment
+        return all(var in assignment.keys() for var in self.crossword.variables)
 
     def consistent(self, assignment):
         """
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        raise NotImplementedError
+        # check all values are distinct
+        if len(assignment.values()) != len(set(assignment.values())):
+            return False
+        for var in assignment:
+            # check every value is the correct length
+            if var.length != len(assignment[var]):
+                return False
+            # check no conflicts between neighbouring variables
+            neighbours = self.neighbours(var)
+            for neighbour in neighbours:
+                overlap = self.crossword.overlaps[var, neighbour]
+                if overlap:
+                    if var[overlap[0]] != neighbour[overlap[1]]:
+                        return False
+        return True
 
     def order_domain_values(self, var, assignment):
         """
