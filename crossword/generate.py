@@ -146,6 +146,8 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
+        # TODO: bugfixes for this function
+
         if arcs == None:
             # begin with initial list of all arcs in the problem
             # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
@@ -221,9 +223,12 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        # TODO: update this function to return correct variable
-        remaining_variables = [var for var in self.crossword.variables if var not in assignment]
-        return remaining_variables[0]
+        unassigned_variables = [var for var in self.crossword.variables if var not in assignment]
+
+        unassigned_variables.sort(key=lambda x: self.crossword.neighbors(x), reverse=True)
+        unassigned_variables.sort(key=lambda var: len(self.domains[var]))
+        return unassigned_variables[0]
+
 
     def backtrack(self, assignment):
         """
