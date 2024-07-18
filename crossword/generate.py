@@ -146,16 +146,16 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        # TODO: bugfixes for this function
 
+        # if no arcs, begin with initial list of all arcs in the problem
+        # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
         if arcs == None:
-            # begin with initial list of all arcs in the problem
-            # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
             vars = list(self.crossword.variables)
             arcs = []
             for i in range(len(vars)):
-                for j in range(i+1, len(vars)):
-                    arcs.append((vars[i], vars[j]))
+                for j in range(len(vars)):
+                    if i != j:
+                        arcs.append((vars[i], vars[j]))
         
         while len(arcs) != 0:
             # remove an arc from the queue
@@ -171,7 +171,7 @@ class CrosswordCreator():
                     neighbours.remove(y)
                     if neighbours:
                         for node in neighbours:
-                            arcs.append((x, node))
+                            arcs.append((node, x))
         
         return True
 
@@ -212,6 +212,8 @@ class CrosswordCreator():
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
+        # Simpler version:
+        # return list(self.domains[var])
         domain_values = list(self.domains[var])
         neighbours = self.crossword.neighbors(var)
         unassigned_neighbours = [x for x in neighbours if x not in assignment]
@@ -235,6 +237,9 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
+        # Simpler version:
+        # remaining_variables = [var for var in self.crossword.variables if var not in assignment]
+        # return remaining_variables[0]
         unassigned_variables = [var for var in self.crossword.variables if var not in assignment]
 
         unassigned_variables.sort(key=lambda var: self.crossword.neighbors(var), reverse=True)
