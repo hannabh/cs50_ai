@@ -23,7 +23,6 @@ parser = nltk.ChartParser(grammar)
 
 
 def main():
-
     # If filename specified, read sentence from file
     if len(sys.argv) == 2:
         with open(sys.argv[1]) as f:
@@ -55,6 +54,13 @@ def main():
             print(" ".join(np.flatten()))
 
 
+def contains_alnum(word):
+    for char in word:
+        if char.isalnum():
+            return True
+    return False
+
+
 def preprocess(sentence):
     """
     Convert `sentence` to a list of its words.
@@ -62,7 +68,13 @@ def preprocess(sentence):
     and removing any word that does not contain at least one alphabetic
     character.
     """
-    raise NotImplementedError
+    # split sentence into a list of words
+    word_list = nltk.tokenize.word_tokenize(sentence)
+    # convert to lowercase
+    word_list = [word.lower() for word in word_list]
+    # remove words that don't contain any alphabetic characters
+    word_list = [word for word in word_list if contains_alnum(word)]
+    return word_list
 
 
 def np_chunk(tree):
@@ -72,7 +84,7 @@ def np_chunk(tree):
     whose label is "NP" that does not itself contain any other
     noun phrases as subtrees.
     """
-    raise NotImplementedError
+    return []
 
 
 if __name__ == "__main__":
