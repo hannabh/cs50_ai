@@ -149,6 +149,7 @@ class CrosswordCreator():
 
         # if no arcs, begin with initial list of all arcs in the problem
         # each arc in arcs is a tuple (x, y) of a variable x and a different variable y
+        # note for nodes A and B, you need to add both arcs A>B and B>A
         if arcs == None:
             vars = list(self.crossword.variables)
             arcs = []
