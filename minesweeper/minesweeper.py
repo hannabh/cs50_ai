@@ -231,17 +231,15 @@ class MinesweeperAI:
         Returns True if the knowledge base has changed, False if not
         """
         knowledge_changed = False
-        sentence_pairs = itertools.combinations(self.knowledge, 2)
-        for sentence1, sentence2 in sentence_pairs:
-            set1 = sentence1.cells
-            set2 = sentence2.cells
-            count1 = sentence1.count
-            count2 = sentence2.count
-            if set1.issubset(set2):
-                new_sentence = Sentence(set2 - set1, count2 - count1)
-                if new_sentence not in self.knowledge:
-                    self.knowledge.append(new_sentence)
-                    knowledge_changed = True
+        for sentence1 in self.knowledge:
+            for sentence2 in self.knowledge:
+                set1 = sentence1.cells
+                set2 = sentence2.cells
+                if set1.issubset(set2):
+                    new_sentence = Sentence(set2 - set1, sentence2.count - sentence1.count)
+                    if new_sentence not in self.knowledge:
+                        self.knowledge.append(new_sentence)
+                        knowledge_changed = True
         return knowledge_changed
 
     def add_knowledge(self, cell, count):
