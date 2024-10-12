@@ -1,6 +1,8 @@
 import nltk
 import sys
 
+nltk.download('punkt_tab')
+
 TERMINALS = """
 Adj -> "country" | "dreadful" | "enigmatical" | "little" | "moist" | "red"
 Adv -> "down" | "here" | "never"
@@ -81,6 +83,10 @@ def preprocess(sentence):
     return word_list
 
 
+def np_subtrees(tree):
+    return list(tree.subtrees(lambda t: t.label() == "NP"))
+
+
 def np_chunk(tree):
     """
     Return a list of all noun phrase chunks in the sentence tree.
@@ -88,7 +94,9 @@ def np_chunk(tree):
     whose label is "NP" that does not itself contain any other
     noun phrases as subtrees.
     """
-    return []
+    np_sub = np_subtrees(tree)
+    np_chunks = [s for s in np_sub if len(np_subtrees(s)) == 1]
+    return np_chunks
 
 
 if __name__ == "__main__":
